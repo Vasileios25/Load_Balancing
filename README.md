@@ -36,7 +36,7 @@ This Docker Compose (`docker-compose.yml`) file sets up a multi-container enviro
 
 ## **Services**
 
-### **1. Nginx Load Balancer** (`load_balancer`)**
+### **1. Nginx Load Balancer** (`load_balancer`)
 
 This service runs a **nginx** server inside a Docker container.
 
@@ -51,7 +51,7 @@ This service runs a **nginx** server inside a Docker container.
 
 ---
 
-### **2.nnginx web server** (`web_server1`)**
+### **2.nnginx web server** (`web_server1`)
 
 This service runs a **nginx** server inside a Docker container.
 
@@ -65,7 +65,7 @@ This service runs a **nginx** server inside a Docker container.
 
 ---
 
-### **3.nnginx web server** (`web_server2`)**
+### **3.nnginx web server** (`web_server2`)
 
 This service runs a **nginx** server inside a Docker container.
 
