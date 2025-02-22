@@ -11,181 +11,78 @@ The project is a simple load balancing  application running inside a Dockerized 
 This project ilustrates the load balancing concept with docker containers in order
 to offer a simple php user credentials form to the customers, it can used for 
 bigger projects for example a web site for orders, use health checks at load balancing level
-in order to minimize the delay and increase the customer sattisfaction
-Also this project can combine with hashicorp vault in ordert to secure user
+in order to minimize the delay and increase the customer sattisfaction. Separate the brindge network
+in frontend that loadbalancer resides and backend that php container and the slave nginx containers resides.Through nginx.conf file for loadbalancer we create an upstream pool with backend servers in order loadbalancer to communicate with them and with the use of proxy_pass http://backend; directibe to route incoming HTTPS requests to backend pool.
+Also this project can combine with HashiCorp Vault in ordert to secure user
 credentials.Furthermore a sql database with replication to persist the login credentials
 and any other customer profile settings,redis for session persistans and many more.
-
 ### Features:
-- 
-- .
-- .
-- .
+- Creation of 4 containers.
+- Loadbalancing between 2 nginx servers.
+- Serving of a php html user credentials file.
 
----
-
-## **1. Initial Setup**
-
-- **Imported Libraries**:
-  - ``: .
-  - ``: .
-  - ``: .
-  
-- .
-- .
-
----
-
-## **2. Connecting to PostgreSQL Database**
-
-- (`my_db`) .
-- .
-
----
-
-## **3. Retrieving Previous Data from Database**
-
-- `Calculator` :
-  ```;
-  ```
-- If no previous data exists, it initializes the statistics to `[0, 0, 0, 0, 0, 0]` (representing counts for each operation).
-
----
-
-## **4. User Interaction and Calculator Operations**
-
-:
-```
-
-```
-
-- :
-  - Addition (1): `first_number + second_number`
-  - Subtraction (2): `first_number - second_number`
-  - Multiplication (3): `first_number * second_number`
-  - Division (4): `first_number / second_number` (with handling for division by zero)
-  - Square Power (5): `math.pow(number, 2)`
-
----
-
-## **5. Handling Errors**
-
-The script includes exception handling for:
-- Invalid input: If the user enters a non-numeric value, it prompts them to try again.
-- Zero division: If division by zero is attempted, it prints an error message and sets the result to 0.
-
----
-
-## **6. Updating Statistics**
-
-After the user exits (choosing option 6), the program:
-- Increments the entry ID (`id += 1`).
-- Prints a summary of how many times each operation was used.
-
----
-
-## **7. Writing Data to CSV**
-
-The script creates a `Statistics.csv` file and writes the updated statistics:
-```python
-with open('Statistics.csv', 'w', newline='') as csvfile:
-    my_writer = csv.writer(csvfile, delimiter=',')
-    my_writer.writerow(input_variable)
-```
-- Reads the CSV data back and stores it in a list (`all_value`).
-
----
-
-## **8. Storing Data in PostgreSQL**
-
-The script inserts the updated statistics into the `Calculator` table using the SQL query:
-```sql
-INSERT INTO Calculator VALUES (%s, %s, %s, %s, %s, %s);
-```
-- Uses `executemany()` to insert multiple rows if needed.
-
----
-
-## **9. Closing the Database Connection**
-
-- Commits the changes and closes the database connection.
-- Prints "Thanks" to indicate that the program has successfully completed execution.
 
 ---
 
 ## Docker Compose File Explanation
 
 This Docker Compose (`docker-compose.yml`) file sets up a multi-container environment with:
-1. **PostgreSQL Database** (`postgres-db`)
-2. **Vault Service** (`vault`) for secrets management
-3. **Python Application** (`python-app`), which interacts with the database
+1. **Nginx Load Balancer** (`load_balancer`)
+2. **nginx web server** (`web_server1`) for secrets management
+3. **nginx web server** (`web_server2`), which interacts with the database
+4. **php container** (`php`), which interacts with the database
 
 ---
 
 ## **Services**
 
-### **1. PostgreSQL Database (`postgres-db`)**
+### **1. Nginx Load Balancer** (`load_balancer`)**
 
-This service runs a **PostgreSQL 13** database inside a Docker container.
+This service runs a **nginx** server inside a Docker container.
 
-- **Image**: Uses the official PostgreSQL 13 image.
-- **Container Name**: `postgres-container`
-- **Exposed Ports**: Internally exposes port **5432** (default PostgreSQL port).
-- **Environment Variables**: Loads database credentials from `.env` variables.
-- **Volumes**:
-  - `init_db.sql`: Runs an SQL script at startup to create the **Calculator** table:
-    ```sql
-    CREATE TABLE IF NOT EXISTS Calculator (
-      id integer,
-      addition integer,
-      substraction integer,
-      multiplication integer,
-      division integer,
-      square integer
-    );
-    ```
-  - `my_volume`: Stores database data persistently.
-- **Restart Policy**: Always restarts the container if it stops.
-- **Network**: Connects to `my-network` for communication with other services.
+- **Image**: Uses the official nginx image.
+- **Container Name**: `master`
+- **Exposed Ports**: Internally exposes port **80** (default http port).
+- **Bind Mounts**:
+  - `html`: mounts index.php to /var/www/html inside the **master** nginix server.
+  - `./nginx.conf`: mounts the localy create nginx.conf file to /etc/nginx/conf.d/default.conf inside the **master** nginix server.
+- **depends_on**: Always start first the slave nginx servers without them loadbalancer cannot start and function.
+- **Network**: Connects to both `frontend` and `backend`for communication with other services.
 
 ---
 
-### **2. Vault (`vault`)**
+### **2.nnginx web server** (`web_server1`)**
 
-This service runs **HashiCorp Vault**, used for securely storing and managing secrets.
+This service runs a **nginx** server inside a Docker container.
 
-- **Build Context**: Uses a custom `Dockerfile.vault` to build the container.
-- **Container Name**: `vault`
-- **Network Mode**: Uses the **host network** (directly binds to the host’s network stack).
-- **Environment Variables**:
-  - `VAULT_ADDR`: Specifies the Vault server address.
-  - `VAULT_TOKEN`: Uses an environment variable for authentication.
-- **Volumes**:
-  - Mounts the Vault configuration file (`vault-config.hcl`).
-  - Mounts a `.env` file to store passwords.
-  - `apply-policies.sh`: Script for applying security policies.
-  - *(Optional)* `kv-policy.hcl`: Can be added for Vault policy configuration.
+- **Image**: Uses the official nginx image.
+- **Container Name**: `slave1`
+- **Network Mode**: Uses the **bridge network** (directly binds to the host’s network stack) but runs inside the `backend` network.
+- **depends_on**: Always start first the **php** server without it `web_server1` cannot start and function to serve content.
+- **Bind Mounts**:
+  - `html`: mounts index.php to /var/www/html inside the **master** nginix server.
+  - `./nginx.conf`: mounts the localy create nginx.conf file to /etc/nginx/conf.d/default.conf inside the **slave** nginix server.
 
 ---
 
-### **3. Python Application (`python-app`)**
+### **3.nnginx web server** (`web_server2`)**
 
-This service runs a **Python script** that connects to the database and performs calculations.
+This service runs a **nginx** server inside a Docker container.
 
-- **Restart Policy**: .
-- **Build Context**: .
-- **Container Name**: ``
-- **Dependencies**:  `` .
-- **Command & Entry Point**:
-  - `` ``.
-  - Executes the Python script (`Calculator.py`) after confirming PostgreSQL is available.
-- **Network**: Connects to `my-network` for database communication.
+- **Image**: Uses the official nginx image.
+- **Container Name**: `slave2`
+- **Network Mode**: Uses the **bridge network** (directly binds to the host’s network stack) but runs inside the `backend` network.
+- **depends_on**: Always start first the **php** server without it `web_server2` cannot start and function to serve content.
+- **Bind Mounts**:
+  - `html`: mounts index.php to /var/www/html inside the **master** nginix server.
+  - `./nginx.conf`: mounts the localy create nginx.conf file to /etc/nginx/conf.d/default.conf inside the **slave** nginix server.
 
 ---
 
 ## **Networks**
-- `my-network`: A bridge network for communication between the `postgres-db` and `python-app`.
-
+- `frontend`: A bridge network for communication between the `postgres-db` and `python-app`.
+- `backend`: A bridge network for communication between the `load_balancer` with  `web_server1`
+`web_server2` and `php`.
 ---
 
 ## **Volumes**

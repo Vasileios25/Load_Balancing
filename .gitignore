@@ -1,0 +1,3 @@
+#Ignore certificates
+fullchain.pem
+privkey.pem

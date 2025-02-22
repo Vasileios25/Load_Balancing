@@ -34,11 +34,15 @@ services:
 
   load_balancer:
     image: nginx
+    container_name: master
     ports:
       - "80:80"
+      - "443:443"
     volumes:
-      - ./html:/var/www/html
+    # - ./html:/var/www/html
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./certs_nginx/fullchain.pem:/etc/letsencrypt/fullchain.pem
+      - ./certs_nginx/privkey.pem:/etc/letsencrypt/privkey.pem
     networks:
       - frontend
       - backend
