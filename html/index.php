@@ -6,7 +6,7 @@
     <title>Login</title>
 </head>
 <body>
-    <h2>Login</h2>
+    <h2>Login Motherfucker</h2>
     <p>Server: <?php echo $_SERVER['SERVER_ADDR']; ?></p> <!-- Add this line to display the server IP -->
     <form action="login.php" method="post">
         <label for="username">Username:</label><br>
