@@ -171,7 +171,8 @@ For common issues, check the logs or run the following command for help:
 docker-compose logs
 ```
 For security reasons certs have nor uploaded.
-Will auto renew
+Will auto renew.
+An A record added(nginx.siaploulis.com) at Cloudflare with public ip, a port forwarding rule added at router port forwarding table with internal ip and port 443 and 80.
 ## Authors
 
 Contributors names and contact info
